@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AWL Sublist 1 单页交互答题网站</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      line-height: 1.6;
+    }
+    .wrap { max-width: 1050px; margin: 0 auto; padding: 28px 16px 48px; }
+    header {
+      background: #020617;
+      color: white;
+      border-radius: 28px;
+      padding: 34px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+    }
+    header p { color: #cbd5e1; margin: 0; }
+    h1 { margin: 8px 0 12px; font-size: clamp(28px, 5vw, 48px); line-height: 1.1; }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: 18px 0;
+      background: rgba(255,255,255,0.94);
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 14px;
+      box-shadow: 0 10px 26px rgba(15,23,42,.08);
+      backdrop-filter: blur(10px);
+    }
+    .toolbar-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .progress { flex: 1; min-width: 220px; height: 12px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+    .bar { height: 100%; width: 0%; background: #0f172a; transition: width .25s; }
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: .18s;
+    }
+    .primary { background: #0f172a; color: white; }
+    .secondary { background: white; color: #0f172a; border: 1px solid #cbd5e1; }
+    button:hover { transform: translateY(-1px); }
+    .score { margin-top: 10px; display: none; border-radius: 18px; background: #f8fafc; padding: 12px; color: #334155; }
+    section {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 28px;
+      padding: 24px;
+      margin: 18px 0;
+      box-shadow: 0 8px 20px rgba(15,23,42,.04);
+    }
+    h2 { margin: 0 0 18px; font-size: 24px; }
+    .q {
+      background: #f8fafc;
+      border: 1px solid #eef2f7;
+      border-radius: 20px;
+      padding: 16px;
+      margin: 12px 0;
+    }
+    .q-title { margin: 0 0 12px; font-weight: 700; }
+    .num {
+      display: inline-block;
+      min-width: 30px;
+      text-align: center;
+      margin-right: 8px;
+      background: #0f172a;
+      color: white;
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-size: 14px;
+    }
+    .options { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .option {
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 16px;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .option.selected { border-color: #0f172a; box-shadow: inset 0 0 0 1px #0f172a; }
+    .option.correct { border-color: #10b981; background: #ecfdf5; }
+    .option.wrong { border-color: #ef4444; background: #fff1f2; }
+    .explain { display: none; margin-top: 10px; background: white; border-radius: 14px; padding: 10px 12px; font-size: 14px; color: #475569; }
+    .wordbox { display: flex; gap: 8px; flex-wrap: wrap; background: #f8fafc; border-radius: 18px; padding: 14px; margin-bottom: 12px; }
+    .tag { background: white; border-radius: 999px; padding: 6px 12px; font-weight: 700; box-shadow: 0 1px 6px rgba(15,23,42,.06); }
+    select { border: 1px solid #cbd5e1; border-radius: 12px; padding: 8px 10px; margin: 0 4px; background: white; font-weight: 700; }
+    select.correct { border-color: #10b981; background: #ecfdf5; }
+    select.wrong { border-color: #ef4444; background: #fff1f2; }
+    .reading { white-space: pre-line; background: #f8fafc; border-radius: 20px; padding: 18px; margin-bottom: 14px; }
+    .order-item {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 18px;
+      padding: 12px;
+      margin: 8px 0;
+    }
+    .order-item.correct { border-color: #10b981; background: #ecfdf5; }
+    .order-item.wrong { border-color: #f59e0b; background: #fffbeb; }
+    .arrow { padding: 7px 10px; border: 1px solid #cbd5e1; background: white; border-radius: 12px; }
+    .fixed-sentence { background: #f8fafc; border-radius: 18px; padding: 14px; margin: 10px 0; }
+    footer { text-align: center; color: #64748b; padding: 22px; }
+    @media (max-width: 720px) {
+      .options { grid-template-columns: 1fr; }
+      header, section { padding: 20px; border-radius: 22px; }
+      .toolbar-row { align-items: stretch; }
+      .btns, .btns button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p>Academic Word List · Sublist 1</p>
+      <h1>单页交互式学术词汇阅读测验</h1>
+      <p>本页面把词汇选择、完形填空、句子排序和阅读理解整合在一个 HTML 单页中，可直接答题、交卷、看解析和重做。</p>
+    </header>
+
+    <div class="toolbar">
+      <div class="toolbar-row">
+        <div class="progress"><div class="bar" id="bar"></div></div>
+        <div class="btns">
+          <button class="primary" onclick="submitQuiz()">交卷 / 查看答案</button>
+          <button class="secondary" onclick="resetQuiz()">重做</button>
+        </div>
+      </div>
+      <div class="score" id="scoreBox"></div>
+    </div>
+
+    <section>
+      <h2>Part I Vocabulary 词汇选择</h2>
+      <div id="vocab"></div>
+    </section>
+
+    <section>
+      <h2>Part II Cloze Test 完形填空</h2>
+      <div class="wordbox" id="wordbox"></div>
+      <div id="cloze"></div>
+    </section>
+
+    <section>
+      <h2>Part III Ordering 句子排序</h2>
+      <p>点击 ↑ ↓ 调整句子顺序。排序题共 5 分。</p>
+      <div class="fixed-sentence"><strong>First sentence:</strong><br>Researchers wanted to study how a new city policy affected people’s income.</div>
+      <div id="ordering"></div>
+      <div class="fixed-sentence"><strong>Last sentence:</strong><br>The study helped the local authority improve future decision-making.</div>
+      <div class="explain" id="orderExplain">正确顺序：D → A → E → B → C。逻辑是：收集数据 → 确定区域 → 定义变量并使用公式 → 分析数据和证据 → 解释结果。</div>
+    </section>
+
+    <section>
+      <h2>Part IV Reading Comprehension 阅读理解</h2>
+      <div class="reading">In this research project, scholars studied the economic changes in a city after a new policy was introduced. Their approach was based on the analysis of data from different sources. They first identified the specific area where changes occurred and then estimated the percent of individuals who received a clear benefit.
+
+The researchers did not assume the result before completing the assessment. Instead, they looked for evidence. Several factors were involved, including the financial sector, the labour market, legal rules, and new legislation. The study also required a clear definition of each variable.
+
+The results indicated that the policy had a significant effect, but the interpretation was not simple. Some areas showed similar results, while others were different because they were derived from local conditions. In response, the local authority decided to create a clearer procedure for future policy decisions.</div>
+      <div id="readingQs"></div>
+    </section>
+
+    <footer>AWL Sublist 1 · Reading-based Quiz</footer>
+  </div>
+
+  <script>
+    const choiceQuestions = [
+      {id:1, part:'vocab', prompt:'The researchers began their project with an ______ of data from different sources.', options:['income','analysis','contract','section'], answer:'analysis', note:'analysis = 分析；analysis of data = 对数据的分析。'},
+      {id:2, part:'vocab', prompt:'The new government ______ may affect the income of many individuals.', options:['policy','formula','source','role'], answer:'policy', note:'policy = 政策；government policy = 政府政策。'},
+      {id:3, part:'vocab', prompt:'We cannot ______ the result before the assessment is complete.', options:['occur','assume','export','derive'], answer:'assume', note:'assume = 假设；不能在评估完成前假设结果。'},
+      {id:4, part:'vocab', prompt:'Strong ______ is required before the researchers can make a conclusion.', options:['evidence','labour','period','sector'], answer:'evidence', note:'evidence = 证据；strong evidence = 有力证据。'},
+      {id:5, part:'vocab', prompt:'The study focuses on a ______ area of the city.', options:['similar','specific','financial','legal'], answer:'specific', note:'specific = 具体的；a specific area = 一个具体区域。'},
+      {id:6, part:'vocab', prompt:'The results ______ that the policy has a significant effect.', options:['indicate','create','establish','involve'], answer:'indicate', note:'indicate = 表明，指出；results indicate that... = 结果表明……。'},
+      {id:7, part:'vocab', prompt:'Each variable must have a clear ______ before the research begins.', options:['distribution','definition','environment','authority'], answer:'definition', note:'definition = 定义；clear definition = 清晰定义。'},
+      {id:8, part:'vocab', prompt:'The financial ______ created many new jobs in the city.', options:['method','source','sector','theory'], answer:'sector', note:'sector = 行业，部门；financial sector = 金融行业。'},
+      {id:9, part:'vocab', prompt:'The local authority should ______ a clear procedure for future decisions.', options:['establish','estimate','identify','interpret'], answer:'establish', note:'establish = 建立；establish a procedure = 建立程序。'},
+      {id:10, part:'vocab', prompt:'Good research can play an important ______ in solving social issues.', options:['role','contract','percent','process'], answer:'role', note:'role = 角色，作用；play an important role = 发挥重要作用。'},
+      {id:26, part:'reading', prompt:'What is the main topic of the passage?', options:['How to export financial products','How a new policy affected a city’s income changes','How to write a contract between two companies','How to define constitutional law'], answer:'How a new policy affected a city’s income changes', note:'文章围绕新政策对城市收入变化的影响展开。'},
+      {id:27, part:'reading', prompt:'Why did the researchers collect data from different sources?', options:['To support their analysis','To create a new city','To avoid using evidence','To change the legal system'], answer:'To support their analysis', note:'多来源数据用于支持 analysis。'},
+      {id:28, part:'reading', prompt:'The word “assume” in the passage is closest in meaning to ______.', options:['prove carefully','believe without full evidence','describe in detail','make available'], answer:'believe without full evidence', note:'assume 指在证据不足时先作假设。'},
+      {id:29, part:'reading', prompt:'Which factor was NOT mentioned as being involved in the process?', options:['The financial sector','The labour market','Legal rules','Medical treatment'], answer:'Medical treatment', note:'文章提到 financial sector, labour market, legal rules，但没有提到 medical treatment。'},
+      {id:30, part:'reading', prompt:'What did the local authority decide to do in response to the results?', options:['Stop all research projects','Create a clearer procedure for future decisions','Remove all legislation','Ignore the interpretation of the results'], answer:'Create a clearer procedure for future decisions', note:'最后一段说明 local authority decided to create a clearer procedure。'}
+    ];
+
+    const clozeWords = ['analysis','policy','evidence','significant','data','involved','procedure','available','factors','income'];
+    const clozeQuestions = [
+      {id:11, answer:'policy', sentence:'A city government introduced a new ___ to improve local economic conditions.'},
+      {id:12, answer:'data', sentence:'Researchers collected ___ from several sources and began their study.'},
+      {id:13, answer:'analysis', sentence:'They began an ___ of the changes.'},
+      {id:14, answer:'income', sentence:'They wanted to know whether people’s ___ increased after the policy was introduced.'},
+      {id:15, answer:'factors', sentence:'Several ___ were considered, including the financial sector and the labour market.'},
+      {id:16, answer:'evidence', sentence:'The researchers did not make a conclusion without strong ___.'},
+      {id:17, answer:'significant', sentence:'Their results showed that the policy had a ___ effect on some groups.'},
+      {id:18, answer:'involved', sentence:'However, not all individuals were equally ___ in the process.'},
+      {id:19, answer:'procedure', sentence:'The local authority decided to create a new ___ for future decisions.'},
+      {id:20, answer:'available', sentence:'The authority wanted to make useful information more ___ to citizens.'}
+    ];
+
+    let order = [
+      {key:'E', text:'They also defined each variable clearly before using a formula.'},
+      {key:'D', text:'First, they collected data from different sources.'},
+      {key:'B', text:'After that, they analyzed the data and looked for strong evidence.'},
+      {key:'C', text:'Finally, they interpreted the results and explained their significance.'},
+      {key:'A', text:'Then they identified the specific area where the changes occurred.'}
+    ];
+    const correctOrder = ['D','A','E','B','C'];
+    let submitted = false;
+
+    function letter(i) { return String.fromCharCode(65 + i); }
+
+    function renderChoice(containerId, part) {
+      const box = document.getElementById(containerId);
+      box.innerHTML = '';
+      choiceQuestions.filter(q => q.part === part).forEach(q => {
+        const div = document.createElement('div');
+        div.className = 'q';
+        div.innerHTML = `<p class="q-title"><span class="num">${q.id}</span>${q.prompt}</p>`;
+        const ops = document.createElement('div');
+        ops.className = 'options';
+        q.options.forEach((op, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'option';
+          btn.dataset.qid = q.id;
+          btn.dataset.value = op;
+          btn.innerHTML = `<strong>${letter(i)}.</strong> ${op}`;
+          btn.onclick = () => selectOption(q.id, op);
+          ops.appendChild(btn);
+        });
+        div.appendChild(ops);
+        const exp = document.createElement('div');
+        exp.className = 'explain';
+        exp.id = `explain-${q.id}`;
+        exp.innerHTML = `正确答案：<strong>${q.answer}</strong>。${q.note}`;
+        div.appendChild(exp);
+        box.appendChild(div);
+      });
+    }
+
+    function renderCloze() {
+      document.getElementById('wordbox').innerHTML = clozeWords.map(w => `<span class="tag">${w}</span>`).join('');
+      const box = document.getElementById('cloze');
+      box.innerHTML = '';
+      clozeQuestions.forEach(q => {
+        const [left, right] = q.sentence.split('___');
+        const opts = ['<option value="">选择词汇</option>'].concat(clozeWords.map(w => `<option value="${w}">${w}</option>`)).join('');
+        const div = document.createElement('div');
+        div.className = 'q';
+        div.innerHTML = `<p><span class="num">${q.id}</span>${left}<select id="cloze-${q.id}" onchange="updateProgress()">${opts}</select>${right}</p><div class="explain" id="explain-${q.id}">正确答案：<strong>${q.answer}</strong></div>`;
+        box.appendChild(div);
+      });
+    }
+
+    function renderOrder() {
+      const box = document.getElementById('ordering');
+      box.innerHTML = '';
+      order.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'order-item';
+        div.id = `order-${index}`;
+        div.innerHTML = `<div><span class="num">${21 + index}</span><strong>${item.key}.</strong> ${item.text}</div><div><button class="arrow" onclick="moveOrder(${index}, -1)">↑</button> <button class="arrow" onclick="moveOrder(${index}, 1)">↓</button></div>`;
+        box.appendChild(div);
+      });
+    }
+
+    function selectOption(qid, value) {
+      document.querySelectorAll(`[data-qid="${qid}"]`).forEach(btn => btn.classList.remove('selected'));
+      document.querySelector(`[data-qid="${qid}"][data-value="${CSS.escape(value)}"]`).classList.add('selected');
+      updateProgress();
+    }
+
+    function moveOrder(index, dir) {
+      const target = index + dir;
+      if (target < 0 || target >= order.length) return;
+      [order[index], order[target]] = [order[target], order[index]];
+      renderOrder();
+      if (submitted) showOrderResult();
+    }
+
+    function getSelected(qid) {
+      const selected = document.querySelector(`[data-qid="${qid}"].selected`);
+      return selected ? selected.dataset.value : '';
+    }
+
+    function updateProgress() {
+      let done = 0;
+      choiceQuestions.forEach(q => { if (getSelected(q.id)) done++; });
+      clozeQuestions.forEach(q => { if (document.getElementById(`cloze-${q.id}`)?.value) done++; });
+      done += 5;
+      document.getElementById('bar').style.width = Math.min(100, Math.round(done / 30 * 100)) + '%';
+    }
+
+    function submitQuiz() {
+      submitted = true;
+      let score = 0;
+      choiceQuestions.forEach(q => {
+        const selected = getSelected(q.id);
+        if (selected === q.answer) score++;
+        document.querySelectorAll(`[data-qid="${q.id}"]`).forEach(btn => {
+          btn.classList.remove('correct', 'wrong');
+          if (btn.dataset.value === q.answer) btn.classList.add('correct');
+          if (btn.dataset.value === selected && selected !== q.answer) btn.classList.add('wrong');
+        });
+        document.getElementById(`explain-${q.id}`).style.display = 'block';
+      });
+      clozeQuestions.forEach(q => {
+        const sel = document.getElementById(`cloze-${q.id}`);
+        sel.classList.remove('correct', 'wrong');
+        if (sel.value === q.answer) { score++; sel.classList.add('correct'); }
+        else { sel.classList.add('wrong'); }
+        document.getElementById(`explain-${q.id}`).style.display = 'block';
+      });
+      const orderScore = showOrderResult();
+      score += orderScore;
+      const pct = Math.round(score / 30 * 100);
+      const msg = pct >= 85 ? '很棒！你已经能较好识别这些学术词汇在句子中的作用。' : pct >= 60 ? '基础不错。建议重点复习错题中的词义和常见搭配。' : '建议先回到阅读材料，标出每个目标词，再重新做一遍。';
+      const box = document.getElementById('scoreBox');
+      box.style.display = 'block';
+      box.innerHTML = `<strong>得分：${score}/30，正确率：${pct}%</strong><br>${msg}`;
+      updateProgress();
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function showOrderResult() {
+      let points = 0;
+      order.forEach((item, index) => {
+        const el = document.getElementById(`order-${index}`);
+        el.classList.remove('correct', 'wrong');
+        if (item.key === correctOrder[index]) { points++; el.classList.add('correct'); }
+        else { el.classList.add('wrong'); }
+      });
+      document.getElementById('orderExplain').style.display = 'block';
+      return points;
+    }
+
+    function resetQuiz() {
+      submitted = false;
+      document.querySelectorAll('.selected,.correct,.wrong').forEach(el => el.classList.remove('selected','correct','wrong'));
+      document.querySelectorAll('select').forEach(sel => sel.value = '');
+      document.querySelectorAll('.explain').forEach(el => el.style.display = 'none');
+      document.getElementById('scoreBox').style.display = 'none';
+      order = [
+        {key:'E', text:'They also defined each variable clearly before using a formula.'},
+        {key:'D', text:'First, they collected data from different sources.'},
+        {key:'B', text:'After that, they analyzed the data and looked for strong evidence.'},
+        {key:'C', text:'Finally, they interpreted the results and explained their significance.'},
+        {key:'A', text:'Then they identified the specific area where the changes occurred.'}
+      ];
+      renderOrder();
+      updateProgress();
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    renderChoice('vocab', 'vocab');
+    renderCloze();
+    renderOrder();
+    renderChoice('readingQs', 'reading');
+    updateProgress();
+  </script>
+</body>
+</html>
